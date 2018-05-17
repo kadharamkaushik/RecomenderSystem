@@ -1,4 +1,5 @@
 import collections
+import math
 import operator
 
 import pandas as pd
@@ -18,6 +19,7 @@ user_data.columns = ["user_id", "movie_id", "rating", "ts"]
 
 user_combination_genre={}
 sorted_genre_matrix={}
+final_recommendation_genre_list=[]
 
 # Creatng each movie rating accordignt to genre and finding the user's combinations in genre
 def create_genre_combination(df):
@@ -38,7 +40,7 @@ def create_genre_combination(df):
             user_combination_genre[tuple(temp_combi_genre)]+=1
     # user_combination_genre=set(tuple(i) for i in k)
     # user_combination_genre=k
-    print(user_combination_genre)
+    # print(user_combination_genre)
     return gener_matrix
 
 # Ratings of Each Genre depending on the user rating
@@ -51,7 +53,7 @@ def get_average_genre_ratings(d):
         for j in range (len(gener_matrix)):
             sum +=gener_matrix[j][i]
         gener_main.append((int)((sum/len(gener_matrix)*5)))
-    print(gener_main)
+    # print(gener_main)
     return gener_main
 
 # Top Genre dict
@@ -73,24 +75,39 @@ def user_ratings(user_id):
     return user_id_df
 
 #calculate recommended genre combinations
+def find_accurate_recomendation_genre(combination_genres_sorted_list):
+    sum=0
+    items = list(combination_genres_sorted_list.items())
+    for i in range(0,len(items)):
+        # print(items[i])
+        sum+=items[i][1]
+    avg = math.ceil (sum/len(combination_genres_sorted_list))
+    # main_ls=[]
+    for i in range(0,len(items)):
+        if(items[i][1]>=avg):
+            final_recommendation_genre_list.append(items[i][0])
+
+
+#Calculating recommended Genre Lists
 def calculate_recommended_genres():
     temp_dict=user_combination_genre
     for i in temp_dict.keys():
         sum=0
-        # print (i[1])
         for j in range(0,len(i)):
-            # print (j)
-            # print (i[j])
             if(i[j] in sorted_genre_matrix):
                 sum+=sorted_genre_matrix[i[j]]*user_combination_genre[i]
         temp_dict[i]=sum
     temp_dict=sorted(temp_dict.items(),key=lambda x : x[1],reverse=True)
-    result = collections.OrderedDict(temp_dict)
-    print(result)
+    combination_genres_sorted_list = collections.OrderedDict(temp_dict)
+    # print(combination_genres_sorted_list)
+    find_accurate_recomendation_genre(combination_genres_sorted_list)
+
+#input : nothing, output : movie dict , all movies with the sorted_genre_matrix
+def filter_movies_according_to_most_viewed_genre():
 
 
 
-    print(temp_dict)
+
 
 def main():
     user = input("Enter User ID :")
@@ -98,6 +115,7 @@ def main():
     gener_values=get_average_genre_ratings(user_data_df)
     top_genere_values(gener_values)
     calculate_recommended_genres()
+    filter_movies_according_to_most_viewed_genre()
 
 
 main()
