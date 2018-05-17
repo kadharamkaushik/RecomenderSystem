@@ -1,7 +1,9 @@
+import collections
 import operator
 
 import pandas as pd
 from pandas import DataFrame
+# import collections
 
 movies = pd.read_csv(r"""D:\Kaushik\PycharmProjects\untitled\data\u.item""", sep="|", header=None,encoding = "ISO-8859-1")
 movies.columns = ["movie_id", "movie_title", "release_date", "video_release_date", "IMDb_URL", "unknown", "Action",
@@ -15,7 +17,7 @@ user_data = pd.read_csv(r"""D:\Kaushik\PycharmProjects\untitled\data\u.data""", 
 user_data.columns = ["user_id", "movie_id", "rating", "ts"]
 
 user_combination_genre={}
-sorted_genre_matrix=[]
+sorted_genre_matrix={}
 
 # Creatng each movie rating accordignt to genre and finding the user's combinations in genre
 def create_genre_combination(df):
@@ -56,11 +58,13 @@ def get_average_genre_ratings(d):
 def top_genere_values(gener_values):
 
     avg=sum(gener_values)/len(gener_values)
-    ls={}
+    # ls={}
     for i in range(len(gener_values)):
         if(gener_values[i]>=avg):
-            ls[genre.iat[i,0]]=gener_values[i]
-    sorted_genre_matrix = sorted(ls.items(), key=operator.itemgetter(1))
+            sorted_genre_matrix[genre.iat[i,0]]=gener_values[i]
+    # print (ls)
+    # sorted_genre_matrix = sorted(ls.items(), key=operator.itemgetter(1))
+    print(sorted_genre_matrix)
 
 # Creating Specific User above avg ratings data
 def user_ratings(user_id):
@@ -68,11 +72,32 @@ def user_ratings(user_id):
     user_id_df = DataFrame(user_id_data.loc[user_id_data['rating'] >= 3])
     return user_id_df
 
+#calculate recommended genre combinations
+def calculate_recommended_genres():
+    temp_dict=user_combination_genre
+    for i in temp_dict.keys():
+        sum=0
+        # print (i[1])
+        for j in range(0,len(i)):
+            # print (j)
+            # print (i[j])
+            if(i[j] in sorted_genre_matrix):
+                sum+=sorted_genre_matrix[i[j]]*user_combination_genre[i]
+        temp_dict[i]=sum
+    temp_dict=sorted(temp_dict.items(),key=lambda x : x[1],reverse=True)
+    result = collections.OrderedDict(temp_dict)
+    print(result)
+
+
+
+    print(temp_dict)
+
 def main():
     user = input("Enter User ID :")
     user_data_df=user_ratings(user)
     gener_values=get_average_genre_ratings(user_data_df)
     top_genere_values(gener_values)
+    calculate_recommended_genres()
 
 
 main()
