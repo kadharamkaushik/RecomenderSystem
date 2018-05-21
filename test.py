@@ -1,6 +1,7 @@
 import collections
 import math
 import pandas as pd
+import random
 from pandas import DataFrame
 
 movies = pd.read_csv(r"""D:\Kaushik\PycharmProjects\untitled\data\u.item""", sep="|", header=None,encoding = "ISO-8859-1")
@@ -14,10 +15,15 @@ genre.columns=["genre","value"]
 user_data = pd.read_csv(r"""D:\Kaushik\PycharmProjects\untitled\data\u.data""", sep="\t", header=None)
 user_data.columns = ["user_id", "movie_id", "rating", "ts"]
 
+global_user_id=0
 user_combination_genre={}
 sorted_genre_matrix={}
 final_recommendation_genre_list=[]
 first_filter_movies = pd.DataFrame()
+final_recommendation_movies = pd.DataFrame(
+        columns=["movie_id", "movie_title", "release_date", "video_release_date", "IMDb_URL", "unknown", "Action",
+                 "Adventure", "Animation", "Children's", "Comedy", "Crime", "Documentary", "Drama", "Fantasy",
+                 "Film_Noir", "Horror", "Musical", "Mystery", "Romance", "Sci-Fi", "Thriller", "War", "Western"])
 
 # Creatng each movie rating accordignt to genre and finding the user's combinations in genre
 def create_genre_combination(df):
@@ -84,6 +90,7 @@ def find_accurate_recomendation_genre(combination_genres_sorted_list):
     for i in range(0,len(items)):
         if(items[i][1]>=avg):
             final_recommendation_genre_list.append(items[i][0])
+    # print (final_recommendation_genre_list)
 
 #Calculating recommended Genre Lists
 def calculate_recommended_genres():
@@ -101,51 +108,113 @@ def calculate_recommended_genres():
 
 #input : nothing, output : movie dict , all movies with the sorted_genre_matrix
 def filter_movies_according_to_most_viewed_genre():
-    temp_m1 = pd.DataFrame(columns=["movie_id", "movie_title", "release_date", "video_release_date", "IMDb_URL", "unknown", "Action",
-                      "Adventure", "Animation", "Children's", "Comedy", "Crime", "Documentary", "Drama", "Fantasy",
-                      "Film_Noir", "Horror", "Musical", "Mystery", "Romance", "Sci-Fi", "Thriller", "War", "Western"])
-    list_keys = list (sorted_genre_matrix.keys())
-    for i in range (0,len(list_keys)):
+    temp_m1 = pd.DataFrame(
+        columns=["movie_id", "movie_title", "release_date", "video_release_date", "IMDb_URL", "unknown", "Action",
+                 "Adventure", "Animation", "Children's", "Comedy", "Crime", "Documentary", "Drama", "Fantasy",
+                 "Film_Noir", "Horror", "Musical", "Mystery", "Romance", "Sci-Fi", "Thriller", "War", "Western"])
+    list_keys = list(sorted_genre_matrix.keys())
+    for i in range(0, len(list_keys)):
+        # print("---------------------------------------------")
         # print(list_keys[i])
-        temp = DataFrame(movies.loc[movies[list_keys[i]]==1])
-        frames = [temp_m1,temp]
-        temp_m1=pd.concat(frames)
-    temp_m1=temp_m1.drop_duplicates(subset=['movie_id'],keep=False)
+        temp = DataFrame(movies.loc[movies[list_keys[i]] == 1])
+        # print(len(temp))
+        frames = [temp_m1, temp]
+        temp_m1 = pd.concat(frames)
+    temp_m1 = temp_m1.drop_duplicates(subset=['movie_id'])
     global first_filter_movies
-    first_filter_movies=temp_m1
+    first_filter_movies = temp_m1
     # print_full_df(first_filter_movies)
-    # print("Length of rows : %d" % (len(first_filter_movies)))
+    print("Length of rows : %d" % (len(first_filter_movies)))
 
 def secondary_movie_filtering():
-    # # print(first_filter_movies)
-    # for i in range(0,len(final_recommendation_genre_list)):
-    #     temp = DataFrame(first_filter_movies)
-    #     flag=False
-    #     for j in range(0,len(final_recommendation_genre_list[i])):
-    #         print(final_recommendation_genre_list[i][j])
-    #         # print_full_df(temp)
-    #         temp = DataFrame(temp.loc[temp[final_recommendation_genre_list[i][j]]==1])
-    #         if(len(temp)==0):
-    #             flag=True
-    #             break
-    #     if(not flag or len(temp)!=0):
-    #         print_full_df(temp)
-
-
-    pass
-
+    for i in range(0,len(final_recommendation_genre_list)):
+        temp = DataFrame(first_filter_movies)
+        for j in range(0,len(final_recommendation_genre_list[i])):
+            temp = DataFrame(temp.loc[temp[final_recommendation_genre_list[i][j]]==1])
+            if(len(temp)==0):
+                break
+        if(len(temp)!=0):
+            recommending_movies(temp)
+        # print (temp)
 def print_full_df(x):
     with pd.option_context('display.max_rows', None, 'display.max_columns', None):
         print(x)
 
+
+def check_if_already_saw(id):
+    # print((user_data.loc[(user_data["movie_id"]==id) &(user_data["user_id"]==int (global_user_id))] ))
+    return (len(user_data.loc[(user_data["movie_id"]==id) &(user_data["user_id"]==int (global_user_id))] ))!=0
+
+
+def alredy_added_movie(temp):
+    # print(temp)
+    return not ((len(final_recommendation_movies.loc[final_recommendation_movies["movie_id"]==temp.iloc[0,0]])))!=0
+
+def add_movie_to_dataframe(temp):
+    global  final_recommendation_movies
+    if len(final_recommendation_movies)==0:
+        frames=[final_recommendation_movies,temp]
+        final_recommendation_movies=pd.concat(frames)
+        # print(len(final_recommendation_movies))
+        return True
+    else:
+        if(alredy_added_movie(temp)):
+            # print (temp)
+            # print (final_recommendation_movies)
+            frames = [final_recommendation_movies, temp]
+            final_recommendation_movies = pd.concat(frames)
+            # print((final_recommendation_movies))
+        return True
+    return False
+
+def recommending_movies(x):
+
+    while_counter=0
+    movie_counter=0
+    while(True):
+        if(while_counter==len(x) or movie_counter==2):
+            return
+        rand = random.randint(0,len(x)-1)
+        temp=(x.iloc[rand,0])
+        temp=movies.loc[(movies['movie_id']==temp)]
+        if(not check_if_already_saw(temp.iloc[0,0])):
+            # print("in adding")
+            # print(temp)
+            flag=add_movie_to_dataframe(temp)
+            # print("-----------------------------------------------------------------------Flag recomeding movies "+ str(flag))
+            # print (final_recommendation_movies)
+            if(flag):
+                movie_counter+=1
+        while_counter+=1
+
+    # check_if_already_saw(101)
+    # print(len(x))
+
+    pass
+
+
+def show_movie_names():
+    if(len(final_recommendation_movies)<5):
+        for i in range(0,len(final_recommendation_movies)):
+            print (final_recommendation_movies.iloc[i,1])
+    else:
+        for i in range(0,5):
+            print(final_recommendation_movies.iloc[i,1])
+
+
+
+
 def main():
-    user = input("Enter User ID :")
-    user_data_df=user_ratings(user)
+    global global_user_id
+    global_user_id = input("Enter User ID :")
+    user_data_df=user_ratings(global_user_id)
     gener_values=get_average_genre_ratings(user_data_df)
     top_genere_values(gener_values)
     calculate_recommended_genres()
     filter_movies_according_to_most_viewed_genre()
     secondary_movie_filtering()
+    show_movie_names()
+    print (len(final_recommendation_movies))
 
 
 main()
