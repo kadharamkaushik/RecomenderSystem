@@ -5,18 +5,17 @@ import random
 from pandas import DataFrame
 import time
 
-movies = pd.read_csv(r"""D:\Kaushik\PycharmProjects\untitled\data\u.item""", sep="|", header=None,encoding = "ISO-8859-1")
+movies = pd.read_csv(r"""D:\Kaushik\PycharmProjects\untitled\100k\u.item""", sep="|", header=None,encoding = "ISO-8859-1")
 movies.columns = ["movie_id", "movie_title", "release_date", "video_release_date", "IMDb_URL", "unknown", "Action",
                       "Adventure", "Animation", "Children's", "Comedy", "Crime", "Documentary", "Drama", "Fantasy",
                       "Film_Noir", "Horror", "Musical", "Mystery", "Romance", "Sci-Fi", "Thriller", "War", "Western"]
-
-genre = pd.read_csv(r"""D:\Kaushik\PycharmProjects\untitled\data\u.genre""", sep="|", header=None)
+genre = pd.read_csv(r"""D:\Kaushik\PycharmProjects\untitled\100k\u.genre""", sep="|", header=None)
 genre.columns=["genre","value"]
-
-user_data = pd.read_csv(r"""D:\Kaushik\PycharmProjects\untitled\data\u.data""", sep="\t", header=None)
+user_data = pd.read_csv(r"""D:\Kaushik\PycharmProjects\untitled\100k\u.data""", sep="\t", header=None)
 user_data.columns = ["user_id", "movie_id", "rating", "ts"]
 
 global_int_user_id=0
+# user combination genre : No of movies in a specific genre combinataion
 user_combination_genre={}
 sorted_genre_matrix={}
 final_recommendation_genre_list=[]
@@ -34,7 +33,7 @@ def user_ratings(user_id):
     print("USER RATINGS - Total number of ratings under consideration :"+str(len(df_user_data)))
     return df_user_data
 
-# Creatng each movie rating accordignt to genre and finding the user's combinations in genre
+# Creatng each movie rating according to genre and finding the user's combinations in genre
 def create_genre_combination(df):
     gener_matrix = []
     k=[]
@@ -51,6 +50,7 @@ def create_genre_combination(df):
             user_combination_genre[tuple(temp_combi_genre)] = 1
         else:
             user_combination_genre[tuple(temp_combi_genre)]+=1
+    # print(user_combination_genre)
     return gener_matrix
 
 # Ratings of Each Genre depending on the user rating
@@ -63,6 +63,7 @@ def get_average_genre_ratings(d):
         for j in range (len(list_gener_matrix)):
             sum +=list_gener_matrix[j][i]
         gener_main.append((int)((sum/len(list_gener_matrix)*5)))
+    # print (gener_main)
     return gener_main
 
 # Top Genre dict
@@ -105,6 +106,7 @@ def filter_movies_according_to_most_viewed_genre():
         columns=["movie_id", "movie_title", "release_date", "video_release_date", "IMDb_URL", "unknown", "Action",
                  "Adventure", "Animation", "Children's", "Comedy", "Crime", "Documentary", "Drama", "Fantasy",
                  "Film_Noir", "Horror", "Musical", "Mystery", "Romance", "Sci-Fi", "Thriller", "War", "Western"])
+
     list_keys = list(sorted_genre_matrix.keys())
     for i in range(0, len(list_keys)):
         temp = DataFrame(movies.loc[movies[list_keys[i]] == 1])
@@ -118,11 +120,18 @@ def filter_movies_according_to_most_viewed_genre():
 #input : nothing, output : movie dict , all movies which are to be recommended to the user
 def secondary_movie_filtering():
     for i in range(0,len(final_recommendation_genre_list)):
-        temp = DataFrame(first_filter_movies)
+        temp_m1 = pd.DataFrame(
+            columns=["movie_id", "movie_title", "release_date", "video_release_date", "IMDb_URL", "unknown", "Action",
+                     "Adventure", "Animation", "Children's", "Comedy", "Crime", "Documentary", "Drama", "Fantasy",
+                     "Film_Noir", "Horror", "Musical", "Mystery", "Romance", "Sci-Fi", "Thriller", "War", "Western"])
         for j in range(0,len(final_recommendation_genre_list[i])):
-            temp = DataFrame(temp.loc[temp[final_recommendation_genre_list[i][j]]==1])
+            temp = DataFrame(first_filter_movies.loc[first_filter_movies[final_recommendation_genre_list[i][j]]==1])
             if(len(temp)==0):
-                break
+                continue
+            else:
+                frames=[temp_m1,temp]
+                temp_m1=pd.concat(frames)
+        temp_m1 = temp_m1.drop_duplicates(subset=['movie_id'])
         if(len(temp)!=0):
             recommending_movies(temp)
 
@@ -157,7 +166,7 @@ def recommending_movies(x):
     while_counter=0
     movie_counter=0
     while(True):
-        if(while_counter==len(x) or movie_counter==2):
+        if(while_counter==len(x) or movie_counter==20):
             return
         rand = random.randint(0,len(x)-1)
         temp=(x.iloc[rand,0])
@@ -171,12 +180,13 @@ def recommending_movies(x):
 #display the final list of recommended movies to the user
 def show_movie_names():
     print("RECOMMENDED MOVIES")
-    if(len(final_recommendation_movies)<5):
-        for i in range(0,len(final_recommendation_movies)):
-            print (final_recommendation_movies.iloc[i,1])
-    else:
-        for i in range(0,5):
-            print(final_recommendation_movies.iloc[i,1])
+    # if(len(final_recommendation_movies)<10):
+    #     for i in range(0,len(final_recommendation_movies)):
+    #         print (final_recommendation_movies.iloc[i,1])
+    # else:
+    #     for i in range(0,10):
+    #         print(final_recommendation_movies.iloc[i,1])
+    print(final_recommendation_movies)
 
 #main method invoking all the other user defined functions
 def main():
